@@ -103,7 +103,7 @@ class ShoppersChurn(BaseClass):
         model, _, coefs = self.train_model(X, y, **kwargs)
         # self.profiles(df, cluster_col='is_churn')
         self.main_dict['shopper_model'] = model
-        print(f'These are the {n_vars} most relevant variables:')
+        print(f'\nThese are the {n_vars} most relevant variables:')
         display(coefs.head(n_vars//2).append(coefs.tail(n_vars//2)))
         self.total['predict_proba'] = [x[-1] for x in model.predict_proba(X)]
         self.total.to_csv(self.base_dir.joinpath('shopper_predict.csv'))
