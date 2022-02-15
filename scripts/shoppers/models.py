@@ -1,5 +1,5 @@
 # Clase madre
-from base import BaseClass
+from .base import BaseClass
 
 # Control de datos
 from typing import Dict
