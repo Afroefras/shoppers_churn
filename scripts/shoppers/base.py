@@ -13,6 +13,7 @@ from pandas import DataFrame, qcut
 # Modelos
 from sklearn.tree import _tree
 from sklearn.pipeline import Pipeline
+from sklearn.metrics import roc_auc_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -108,19 +109,20 @@ class BaseClass:
         Escala y entrena un modelo, devuelve el score, el objeto tipo Pipeline y la relevancia de cada variable
         '''
         # Conjunto de entrenamiento y de test
-        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.85, random_state=7, shuffle=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.77, random_state=7, shuffle=True)
 
         # Define los pasos del flujo
         pipe_obj = Pipeline(steps=[
             ('encoder', encoder()),
             ('scaler', scaler()),
             ('model', model(**kwargs))
-        ])
+        ]).fit(X_train,y_train)
 
+        
         # Entrena y guarda el score en test
-        test_score = pipe_obj.fit(X_train,y_train).score(X_test, y_test)
+        test_score = roc_auc_score(pipe_obj.predict(X_test), y_test)
         # Guarda el score en train, para revisar sobreajuste
-        train_score = pipe_obj.score(X_train,y_train)
+        train_score = roc_auc_score(pipe_obj.predict(X_train), y_train)
 
         # Imprime los scores
         print(f"\nScore: {'{:.2%}'.format(test_score)}\nTraining score: {'{:.2%}'.format(train_score)}")
