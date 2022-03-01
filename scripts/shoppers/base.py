@@ -5,9 +5,9 @@ from IPython.display import display
 
 # Ingeniería de variables
 from re import sub, UNICODE
-from numpy import nan, array
 from unicodedata import normalize
 from difflib import get_close_matches
+from numpy import nan, array, asarray, unique
 from pandas import DataFrame, qcut
 
 # Modelos
@@ -19,6 +19,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from category_encoders.cat_boost import CatBoostEncoder
 from sklearn.preprocessing import RobustScaler, OneHotEncoder, MaxAbsScaler
+
+
+# Gráficas
+from seaborn import heatmap
+from matplotlib.pyplot import subplots, show
+from sklearn.metrics import confusion_matrix
 
 
 class BaseClass:
@@ -141,6 +147,24 @@ class BaseClass:
 
         # Devuelve el objeto para clustering, la lista de scores tanto en train como en test y la relevancia de cada variable para el modelo 
         return pipe_obj, (test_score,train_score), coef_var
+
+
+    def cm_sklearn(self, X, y, fit_model) -> DataFrame:
+        cm = DataFrame(confusion_matrix(y_true=y, y_pred=fit_model.predict(X)),
+                        index=fit_model.classes_,
+                        columns=fit_model.classes_).replace({0:nan}).T
+        print('Accuracy de {:.2%}'.format(asarray(cm).trace()/len(y)))
+
+        size = len(unique(y))//1
+        fig, ax = subplots(figsize=(size,size)) 
+        heatmap(DataFrame([cm[col]/cm[col].sum() for col in cm.columns]), 
+                    annot = True,
+                    fmt = '.0%',
+                    cmap = 'Blues',
+                    linewidths = 0.5, 
+                    ax = ax)
+        show()
+        return cm
 
 
     def profiles(self, df: DataFrame, cluster_col: str='cluster', to_show: int=3) -> None: 

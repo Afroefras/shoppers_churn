@@ -107,4 +107,5 @@ class ShoppersChurn(BaseClass):
         display(coefs.head(n_vars//2).append(coefs.tail(n_vars//2)))
         self.total['predict_proba'] = [x[-1] for x in model.predict_proba(X)]
         self.total.to_csv(self.base_dir.joinpath('shopper_predict.csv'))
+        self.confussion_matrix = self.cm_sklearn(X, y, model)
         # self.tree_to_code(X, y)
