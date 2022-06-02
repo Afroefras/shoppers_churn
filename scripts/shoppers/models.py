@@ -16,14 +16,15 @@ class ShoppersChurn(BaseClass):
         self.main_dict = main_dict
 
 
-    def get_files(self, shopper_id_col: str='shopper_id') -> None:
+    def get_files(self, id_col: str) -> None:
+        self.id_col = id_col
         data = read_csv(self.file_path, low_memory=False)
         end_of_shopper_data = [x for x,y in enumerate(data.columns) if y=='end_of_shoppers_data'][0]
-        self.sh = data.iloc[:,:end_of_shopper_data].drop_duplicates(shopper_id_col)
-        self.df = data[[shopper_id_col]].join(data.iloc[:,end_of_shopper_data+1:])
+        self.sh = data.iloc[:,:end_of_shopper_data].drop_duplicates(self.id_col)
+        self.df = data[[self.id_col]].join(data.iloc[:,end_of_shopper_data+1:])
 
 
-    def clean_shopper_data(self, marital_col: str='marital_status', insurance_col: str='insurance', bank_col: str='bank', transport_col: str='transport') -> None:
+    def clean_shopper_data(self, marital_col: str, insurance_col: str, bank_col: str, transport_col: str) -> None:
         df = self.sh.copy()
         df[marital_col] = df[marital_col].map(lambda x: nan if str(x)=='nan' else x.replace(' ',''))
 
@@ -54,20 +55,20 @@ class ShoppersChurn(BaseClass):
         self.sh = df.copy()
 
 
-    def vars_shopper(self, id_col: str='shopper_id', official_id_col: str='official_id', insurance_col: str='insurance', last_date_col: str='last_date') -> None:
-        df = self.sh.set_index(id_col)
+    def vars_shopper(self, officialid_col: str, insurance_col: str, last_date_col: str) -> None:
+        df = self.sh.set_index(self.id_col)
 
-        df['birthday'] = to_datetime(df[official_id_col].str[4:10], format=r'%y%m%d')
+        df['birthday'] = to_datetime(df[officialid_col].str[4:10], format=r'%y%m%d')
         df['birthday'] = df['birthday'].map(lambda x: date(x.year-100, x.month, x.day) if x.year>datetime.today().year else x)
         df['age'] = (datetime.today() - df['birthday']).dt.days/365
 
-        df['genre'] = df[official_id_col].str[10:11]
+        df['genre'] = df[officialid_col].str[10:11]
 
         df[last_date_col] = to_datetime(df[last_date_col])
         df['is_churn'] = ((datetime.today() - df[last_date_col]).dt.days//7 >= 4)*1
         df['days_for_insurance_exp'] = df[[insurance_col,last_date_col]].apply(lambda x: nan if str(x[0])=='nan' else (x[0] - x[-1]).days, axis=1)
         
-        df.drop([official_id_col, 'birthday', insurance_col, last_date_col], axis=1, inplace=True)
+        df.drop([officialid_col, 'birthday', insurance_col, last_date_col], axis=1, inplace=True)
 
         self.main_dict['shop_num_cols'] = df.sample(frac=0.1).describe().columns.tolist()
         self.main_dict['shop_cat_cols'] = [x for x in df.columns if x not in self.main_dict['shop_num_cols']]
@@ -82,12 +83,12 @@ class ShoppersChurn(BaseClass):
         self.sh = df.astype(str).copy()
 
 
-    def vars_orders(self, id_col: str='shopper_id') -> None:
+    def vars_orders(self) -> None:
         df = self.df.copy()
         df['n_orders'] = 1
-        agg = df.pivot_table(index=id_col, values='n_orders', aggfunc=sum)
+        agg = df.pivot_table(index=self.id_col, values='n_orders', aggfunc=sum)
         for col in df.columns[:-1]:
-            if col!=id_col: agg = agg.join(self.bin_distrib(df, id_col, col, self.main_dict), )
+            if col!=self.id_col: agg = agg.join(self.bin_distrib(df, self.id_col, col, self.main_dict), )
         
         self.main_dict['orders_bin_dict'] = {}
         for col in agg.columns:
